@@ -1,4 +1,4 @@
-﻿namespace Client_Homework_1
+﻿namespace Server_Homework_1
 {
     internal class Program
     {

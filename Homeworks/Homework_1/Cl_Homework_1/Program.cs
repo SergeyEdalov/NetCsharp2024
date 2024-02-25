@@ -4,7 +4,7 @@ namespace Cl_Homework_1
 {
     public class Client
     {
-        static async void Main(string[] args)
+        static async Task Main(string[] args)
         {
             using TcpClient tcpClient = new TcpClient();
             Console.Write("Введите свое имя: ");

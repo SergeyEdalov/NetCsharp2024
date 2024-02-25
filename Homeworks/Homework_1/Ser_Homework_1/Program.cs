@@ -48,9 +48,9 @@ namespace Ser_Homework_1
             try
             {
                 var reader = new StreamReader(tcpClient.GetStream());
-                //string? userName = await reader.ReadLineAsync();
-                //string? message = $"{userName} вошел в чат";
-                string? message = await reader.ReadLineAsync();
+                string? userName = await reader.ReadLineAsync();
+                string? message = $"{userName} вошел в чат";
+                //string? message = await reader.ReadLineAsync();
                 // посылаем сообщение о входе в чат всем подключенным пользователям
                 foreach (var client in clients)
                 {
@@ -66,13 +66,13 @@ namespace Ser_Homework_1
 
                     message = await reader.ReadLineAsync();
 
-                    Console.WriteLine($"{message}");
+                    Console.WriteLine($"{userName}: {message}");
                     Console.WriteLine("*****");
 
                     foreach (var client in clients)
                     {
                         var writer = new StreamWriter(client.GetStream());
-                        await writer.WriteLineAsync(message);
+                        await writer.WriteLineAsync($"{userName}: {message}");
                         await writer.FlushAsync();
                     }
                 }

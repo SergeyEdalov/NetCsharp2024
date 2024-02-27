@@ -1,8 +1,11 @@
 ﻿using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 
-namespace Ser_Homework_1
+namespace Ser_Homework_2
 {
+    //Добавьте возможность ввести слово Exit в чате клиента, чтобы можно было завершить его работу.
+    //В коде сервера добавьте ожидание нажатия клавиши, чтобы также прекратить его работу.
     public class Program
     {
         static async Task Main(string[] args)
@@ -11,7 +14,6 @@ namespace Ser_Homework_1
             await server.Run();
         }
     }
-
 
     public class ChatServer
     {
@@ -27,59 +29,81 @@ namespace Ser_Homework_1
 
                 while (true)
                 {
+                    Task.Run(() => ServerOff(clients));
+
                     var tcpClient = await listener.AcceptTcpClientAsync();
-
                     Console.WriteLine("Успешно подключен");
-
                     clients.Add(tcpClient);
-
+                    
                     Task.Run(() => ProcessClient(tcpClient, clients));
-
                 }
             }
             catch (Exception ex)
             {
                 await Console.Out.WriteLineAsync(ex.Message.ToString());
             }
+            finally { listener.Stop(); }
         }
 
-        public async Task ProcessClient(TcpClient tcpClient, List<TcpClient> clients)
+        private async Task ProcessClient(TcpClient tcpClient, List<TcpClient> clients)
         {
             try
             {
                 var reader = new StreamReader(tcpClient.GetStream());
+
                 string? userName = await reader.ReadLineAsync();
-                string? message = $"{userName} вошел в чат";
-                //string? message = await reader.ReadLineAsync();
-                // посылаем сообщение о входе в чат всем подключенным пользователям
-                foreach (var client in clients)
-                {
-                    var writer = new StreamWriter(client.GetStream());
-                    await writer.WriteLineAsync(message);
-                    await writer.FlushAsync();
-                }
+                string? message = "";
+
+                await Broadcast(clients, $"{userName} вошел в чат");
+
                 Console.WriteLine(message);
 
                 while (true)
                 {
-                    //var reader = new StreamReader(tcpClient.GetStream());
-
                     message = await reader.ReadLineAsync();
 
-                    Console.WriteLine($"{userName}: {message}");
-                    Console.WriteLine("*****");
+                    Console.WriteLine($"{userName}: {message}\n*****");
 
-                    foreach (var client in clients)
-                    {
-                        var writer = new StreamWriter(client.GetStream());
-                        await writer.WriteLineAsync($"{userName}: {message}");
-                        await writer.FlushAsync();
-                    }
+                    if (message == "exit") break;
+
+                    await Broadcast(clients, $"{userName}: {message}");
                 }
+                await Broadcast(clients, $"{userName}: Вышел из чата");
             }
             catch (Exception e)
             {
                 Console.WriteLine($"{e.Message}");
+            }
+            finally { DeleteUser(tcpClient, clients); }
+        }
+
+        private void DeleteUser(TcpClient tcpClient, List<TcpClient> clients)
+        {
+            clients.Remove(tcpClient);
+            tcpClient?.Close();
+        }
+
+        private async Task Broadcast(List<TcpClient> clients, string formatMessage)
+        {
+            foreach (var client in clients)
+            {
+                var writer = new StreamWriter(client.GetStream());
+                await writer.WriteLineAsync(formatMessage);
+                await writer.FlushAsync();
+            }
+        }
+
+        private async Task ServerOff(List<TcpClient> clients)
+        {
+            string off = await Console.In.ReadLineAsync();
+
+            if (off == "q")
+            {
+                foreach (var client in clients)
+                {
+                    client.Close();
+                }
+                listener.Stop();
             }
         }
     }

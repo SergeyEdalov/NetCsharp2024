@@ -1,4 +1,4 @@
-﻿namespace Homework_2
+﻿namespace Cl_Homework_2
 {
     internal class Program
     {
